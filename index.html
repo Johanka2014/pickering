@@ -28,27 +28,42 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+<!-- Changed background color from bg-gray-50 to bg-green-100 for a new theme. -->
+<body class="bg-green-100 flex items-center justify-center min-h-screen p-4">
 
-    <main id="app-container" class="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full">
+    <!-- The main container for the quiz app. Rounded corners and a shadow give it a card-like appearance. -->
+    <!-- overflow-hidden is added to ensure the image corners are clipped by the parent's rounded border. -->
+    <main id="app-container" class="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden">
+        
+        <!-- Header Image: w-full makes it span the full width of the container. -->
+        <!-- The 'max-w-xs' and 'mx-auto' classes were removed to allow the image to fill the container. -->
+        <img
+            src="https://static.wixstatic.com/media/0f55f2_d0ce1f16f68b4f57ab1ee7c6337b7902~mv2.jpg"
+            alt="An illustration of books, a lightbulb, and gears, symbolizing learning and knowledge"
+            class="w-full"
+            onerror="this.onerror=null;this.src='https://placehold.co/600x250/e2e8f0/64748b?text=Vocabulary+Test';"
+        >
 
-        <!-- Intro Screen -->
-        <div id="intro-view" class="text-center">
-            <h1 class="text-4xl font-bold mb-4 text-gray-800">End of Year Vocabulary Test</h1>
-            <p class="text-lg text-gray-600 mb-8">This test uses 40 words and includes multiple choice, fill-in-the-blank, and matching questions.</p>
-            <button id="start-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
-                Start Test
-            </button>
-        </div>
+        <!-- This div wraps the actual quiz content and provides padding. -->
+        <div class="p-6 md:p-8">
+            <!-- Intro Screen -->
+            <div id="intro-view" class="text-center">
+                <h1 class="text-4xl font-bold mb-4 text-gray-800">End of Year Vocabulary Test</h1>
+                <p class="text-lg text-gray-600 mb-8">This test uses 40 words and includes multiple choice, fill-in-the-blank, and matching questions.</p>
+                <button id="start-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                    Start Test
+                </button>
+            </div>
 
-        <!-- Test Screen -->
-        <div id="test-view" class="hidden">
-            <!-- Test content will be generated here by JavaScript -->
-        </div>
+            <!-- Test Screen -->
+            <div id="test-view" class="hidden">
+                <!-- Test content will be generated here by JavaScript -->
+            </div>
 
-        <!-- Results Screen -->
-        <div id="results-view" class="hidden">
-            <!-- Results content will be generated here by JavaScript -->
+            <!-- Results Screen -->
+            <div id="results-view" class="hidden">
+                <!-- Results content will be generated here by JavaScript -->
+            </div>
         </div>
 
     </main>
@@ -236,9 +251,7 @@
             if (q.type === 'multiple-choice') {
                 document.querySelectorAll('.mc-option').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        // Deselect others
                         document.querySelectorAll('.mc-option').forEach(b => b.classList.remove('bg-blue-500', 'border-blue-500', 'text-white', 'shadow-md'));
-                        // Select this one
                         e.target.classList.add('bg-blue-500', 'border-blue-500', 'text-white', 'shadow-md');
                         userAnswers[q.word] = e.target.dataset.answer;
                     });
@@ -262,29 +275,24 @@
             const key = currentQuestionIndex;
 
             if (btn.classList.contains('match-word')) {
-                // Deselect previous word, if any
                 if(selectedWord) selectedWord.classList.remove('word-selected');
                 selectedWord = btn;
                 btn.classList.add('word-selected');
             } else if (btn.classList.contains('match-def')) {
-                // Deselect previous def, if any
                 if(selectedDef) selectedDef.classList.remove('def-selected');
                 selectedDef = btn;
                 btn.classList.add('def-selected');
             }
 
             if (selectedWord && selectedDef) {
-                // Save the pair
                 if (!userAnswers[key]) userAnswers[key] = {};
                 userAnswers[key][selectedWord.dataset.word] = selectedDef.dataset.def;
 
-                // Mark as paired and disable
                 selectedWord.classList.add('paired');
                 selectedDef.classList.add('paired');
                 selectedWord.classList.remove('word-selected');
                 selectedDef.classList.remove('def-selected');
                 
-                // Reset selections
                 selectedWord = null;
                 selectedDef = null;
             }
@@ -351,7 +359,7 @@
                         const userDef = userAnswer ? userAnswer[word] : "No answer";
                         const correctDef = q.correctPairs[word];
                         const isMatchCorrect = userDef === correctDef;
-                        content += `<li class="${isMatchCorrect ? 'text-green-700' : 'text-red-700'}"><strong>${word}:</strong> Your match "${userDef}" was ${isMatchCorrect ? 'correct' : `incorrect. Correct was "${correctDef}"`}.</li>`;
+                        content += `<li class="${isMatchCorrect ? 'text-green-700' : 'text-red-700'}"><strong>${word}:</strong> Your match "${userDef || 'none'}" was ${isMatchCorrect ? 'correct' : `incorrect. Correct was "${correctDef}"`}.</li>`;
                     });
                     content += `</ul></div>`;
                 } else {
@@ -384,4 +392,3 @@
     </script>
 </body>
 </html>
-
