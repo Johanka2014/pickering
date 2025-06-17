@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Vocabulary Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for matching game selections */
+        .word-selected {
+            background-color: #93c5fd; /* bg-blue-300 */
+            border-color: #60a5fa; /* border-blue-400 */
+            box-shadow: 0 0 0 2px #3b82f6; /* ring-2 ring-blue-500 */
+        }
+        .def-selected {
+            background-color: #a7f3d0; /* bg-green-300 */
+            border-color: #4ade80; /* border-green-400 */
+            box-shadow: 0 0 0 2px #22c55e; /* ring-2 ring-green-500 */
+        }
+        .paired {
+            background-color: #d1d5db; /* bg-gray-300 */
+            color: #6b7280; /* text-gray-500 */
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 flex items-center justify-center min-h-screen p-4">
+
+    <!-- The main container for the quiz app. Rounded corners and a shadow give it a card-like appearance. -->
+    <main id="app-container" class="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden">
+        
+        <!-- Header Image: w-full makes it span the full width of the container. -->
+        <img
+            src="https://static.wixstatic.com/media/0f55f2_d0ce1f16f68b4f57ab1ee7c6337b7902~mv2.jpg"
+            alt="An illustration of books, a lightbulb, and gears, symbolizing learning and knowledge"
+            class="w-full"
+            onerror="this.onerror=null;this.src='https://placehold.co/600x250/e2e8f0/64748b?text=Vocabulary+Test';"
+        >
+
+        <!-- This div wraps the actual quiz content and provides padding. -->
+        <div class="p-6 md:p-8">
+            <!-- Intro Screen -->
+            <div id="intro-view" class="text-center">
+                <h1 class="text-4xl font-bold mb-4 text-gray-800">End of Year Vocabulary Test</h1>
+                <p class="text-lg text-gray-600 mb-8">This test uses vocabulary from Katka's list and includes multiple choice, fill-in-the-blank, and matching questions.</p>
+                <button id="start-btn" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                    Start Test
+                </button>
+            </div>
+
+            <!-- Test Screen -->
+            <div id="test-view" class="hidden">
+                <!-- Test content will be generated here by JavaScript -->
+            </div>
+
+            <!-- Results Screen -->
+            <div id="results-view" class="hidden">
+                <!-- Results content will be generated here by JavaScript -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- DOM Elements ---
+        const introView = document.getElementById('intro-view');
+        const testView = document.getElementById('test-view');
+        const resultsView = document.getElementById('results-view');
+        const startBtn = document.getElementById('start-btn');
+
+        // --- STATE ---
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+        let score = 0;
+        let startTime = null;
+        let endTime = null;
+        let selectedWord = null;
+        let selectedDef = null;
+
+        // --- VOCABULARY DATA (From katka vocak.txt) ---
+        const vocabularyList = [
+            { word: 'Recover', definition: 'To return to a normal state of health, mind, or strength.' },
+            { word: 'At short notice', definition: 'With little warning or time for preparation.' },
+            { word: 'Dress up', definition: 'To put on smart or formal clothes.' },
+            { word: 'Inhaler', definition: 'A device for administering a drug to be breathed in.' },
+            { word: 'Ligaments', definition: 'Tough fibrous tissue connecting bones or cartilages.' },
+            { word: 'Swelled up', definition: 'To become larger or rounder in size, typically as a result of an accumulation of fluid.' },
+            { word: 'Brace', definition: 'A device that clamps things together or holds and supports them in position.' },
+            { word: 'Immobile', definition: 'Not moving; motionless.' },
+            { word: 'Redundancies', definition: 'The state of not being in a job because you are no longer needed.' },
+            { word: 'Slashed', definition: 'To reduce (a price, quantity, etc.) greatly.' },
+            { word: 'Checkup', definition: 'A thorough medical or dental examination.' },
+            { word: 'Headhunt', definition: 'To persuade someone to leave their job by offering them another job with more pay and a higher position.' },
+            { word: 'Exploit', definition: 'To make full use of and derive benefit from (a resource).' },
+            { word: 'Disregard', definition: 'To pay no attention to; ignore.' },
+            { word: 'Terminate', definition: 'To bring to an end.' },
+            { word: 'Reassure', definition: 'To say or do something to remove the doubts or fears of someone.' },
+            { word: 'Crutches', definition: 'Sticks used as a support under the armpit by a person with an injury.' },
+            { word: 'Rehabilitation', definition: 'The action of restoring someone to health or normal life through training and therapy.' },
+            { word: 'Proactive', definition: 'Creating or controlling a situation by causing something to happen rather than responding to it after it has happened.' },
+            { word: 'Mediate', definition: 'To intervene between people in a dispute in order to bring about an agreement.' },
+            { word: 'Rely on', definition: 'To depend on with full trust or confidence.' },
+            { word: 'Limping', definition: 'Walking with difficulty, typically because of a damaged or stiff leg or foot.' },
+            { word: 'Compensating', definition: 'Reducing or counteracting the effect of something undesirable by exerting an opposite force or effect.' },
+            { word: 'Incentives', definition: 'A thing that motivates or encourages one to do something.' },
+            { word: 'Backlash', definition: 'A strong and adverse reaction by a large number of people.' },
+            { word: 'Feedback', definition: 'Information about reactions to a product or a person\'s performance of a task.' },
+            { word: 'Surrogate', definition: 'A substitute, especially a person deputizing for another in a specific role or office.' },
+            { word: 'Ruled out', definition: 'To exclude someone or something as a possibility.' },
+            { word: 'Blackout', definition: 'A temporary loss of consciousness or electricity.' },
+            { word: 'Delegate', definition: 'To entrust (a task or responsibility) to another person.' },
+            { word: 'Rehearse', definition: 'To practice (a play, piece of music, or other work) for later public performance.' },
+            { word: 'Drop off', definition: 'To take someone or something to a particular place and leave them there.' },
+            { word: 'Pick up', definition: 'To go somewhere to collect someone, typically in one\'s car.' },
+            { word: 'Compromise', definition: 'An agreement of a dispute that is reached by each side making concessions.' },
+            { word: 'Go on strike', definition: 'To refuse to work as a form of organized protest.' }
+        ];
+
+        // --- FUNCTIONS ---
+        const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
+
+        const generateTestQuestions = () => {
+            const shuffledVocab = shuffleArray(vocabularyList);
+            
+            const mcq = shuffledVocab.slice(0, 15).map(vocab => {
+                const incorrectDefs = vocabularyList.filter(v => v.word !== vocab.word).map(v => v.definition);
+                const options = shuffleArray([vocab.definition, ...shuffleArray(incorrectDefs).slice(0, 3)]);
+                return {
+                    type: 'multiple-choice',
+                    question: `What is the definition of "${vocab.word}"?`,
+                    word: vocab.word,
+                    options: options,
+                    correctAnswer: vocab.definition
+                };
+            });
+
+            const fillInBlanksData = [
+                { question: 'After the injury, my ankle ________ to twice its normal size.', word: 'Swelled up' },
+                { question: 'The company ________ its prices to attract more customers during the sale.', word: 'Slashed' },
+                { question: 'The doctor told me I needed to go for physical ________ to regain strength in my leg.', word: 'Rehabilitation' },
+                { question: 'My other leg started hurting because it was ________ for the weak ankle.', word: 'Compensating' },
+                { question: 'The new company policy caused a huge ________ among the employees.', word: 'Backlash' },
+                { question: 'The manager asked for ________ from the team on the new software.', word: 'Feedback' },
+                { question: 'I need to ________ my daughter at school at 8 AM.', word: 'Drop off' },
+                { question: 'The workers threatened to ________ if their demands for better pay were not met.', word: 'Go on strike' }
+            ];
+            const fillInBlanks = shuffleArray(fillInBlanksData).map(q => ({ ...q, type: 'fill-in-the-blank', correctAnswer: q.word }));
+
+            const matchingWords = shuffledVocab.slice(15, 25);
+            const matchingDefs = shuffleArray(matchingWords.map(v => v.definition));
+            const matchingQuestion = {
+                type: 'matching',
+                question: 'Match the words to their correct definitions.',
+                words: matchingWords.map(v => v.word),
+                definitions: matchingDefs,
+                correctPairs: matchingWords.reduce((acc, v) => ({ ...acc, [v.word]: v.definition }), {})
+            };
+            
+            questions = shuffleArray([...mcq, ...fillInBlanks, matchingQuestion]);
+        };
+        
+        const switchView = (view) => {
+            introView.classList.add('hidden');
+            testView.classList.add('hidden');
+            resultsView.classList.add('hidden');
+            document.getElementById(`${view}-view`).classList.remove('hidden');
+        }
+
+        const startTest = () => {
+            generateTestQuestions();
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            score = 0;
+            startTime = Date.now();
+            endTime = null;
+            renderQuestion();
+            switchView('test');
+        };
+
+        const renderQuestion = () => {
+            const q = questions[currentQuestionIndex];
+            if (!q) return;
+
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            let content = `
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div class="bg-indigo-500 h-2.5 rounded-full" style="width: ${progress}%"></div>
+                </div>
+                <div class="mb-4 text-gray-700">
+                    <p class="text-xl font-semibold">Question ${currentQuestionIndex + 1} of ${questions.length}</p>
+                    <p class="text-lg mt-2">${q.question}</p>
+                </div>
+            `;
+            
+            if (q.type === 'multiple-choice') {
+                content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                q.options.forEach(option => {
+                    content += `<button class="mc-option p-4 rounded-lg border-2 transition-all duration-200 text-left bg-white border-gray-300 hover:border-indigo-400" data-answer="${option}">${option}</button>`;
+                });
+                content += `</div>`;
+            }
+
+            if (q.type === 'fill-in-the-blank') {
+                content += `<input type="text" id="fill-in-blank-input" class="mt-2 p-3 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type the correct word...">`;
+            }
+
+            if (q.type === 'matching') {
+                content += `<div class="flex flex-col md:flex-row justify-between gap-8 mt-4">`;
+                content += `<div class="flex-1 flex flex-col gap-2"><h4 class="font-semibold text-center text-gray-600">Words</h4>`;
+                q.words.forEach(word => {
+                    content += `<button class="match-word p-3 rounded-lg border-2 transition-all duration-200 bg-white hover:bg-blue-100" data-word="${word}">${word}</button>`;
+                });
+                content += `</div>`;
+                content += `<div class="flex-1 flex flex-col gap-2"><h4 class="font-semibold text-center text-gray-600">Definitions</h4>`;
+                q.definitions.forEach(def => {
+                    content += `<button class="match-def p-3 rounded-lg border-2 transition-all duration-200 text-left bg-white hover:bg-green-100" data-def="${def}">${def}</button>`;
+                });
+                content += `</div></div>`;
+            }
+            
+            content += `
+                <div class="mt-8 flex justify-end">
+                    <button id="next-btn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300">
+                        ${currentQuestionIndex < questions.length - 1 ? 'Next' : 'Finish'}
+                    </button>
+                </div>`;
+
+            testView.innerHTML = content;
+            addQuestionEventListeners();
+        };
+
+        const addQuestionEventListeners = () => {
+            document.getElementById('next-btn').addEventListener('click', nextQuestion);
+            
+            const q = questions[currentQuestionIndex];
+            if (q.type === 'multiple-choice') {
+                document.querySelectorAll('.mc-option').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.mc-option').forEach(b => b.classList.remove('bg-indigo-500', 'border-indigo-500', 'text-white', 'shadow-md'));
+                        e.target.classList.add('bg-indigo-500', 'border-indigo-500', 'text-white', 'shadow-md');
+                        userAnswers[q.word] = e.target.dataset.answer;
+                    });
+                });
+            }
+            
+            if (q.type === 'fill-in-the-blank') {
+                document.getElementById('fill-in-blank-input').addEventListener('input', (e) => {
+                    userAnswers[q.correctAnswer] = e.target.value;
+                });
+            }
+
+            if (q.type === 'matching') {
+                document.querySelectorAll('.match-word').forEach(btn => btn.addEventListener('click', handleMatchClick));
+                document.querySelectorAll('.match-def').forEach(btn => btn.addEventListener('click', handleMatchClick));
+            }
+        };
+
+        const handleMatchClick = (e) => {
+            const btn = e.target;
+            const key = currentQuestionIndex;
+
+            if (btn.classList.contains('match-word')) {
+                if(selectedWord) selectedWord.classList.remove('word-selected');
+                selectedWord = btn;
+                btn.classList.add('word-selected');
+            } else if (btn.classList.contains('match-def')) {
+                if(selectedDef) selectedDef.classList.remove('def-selected');
+                selectedDef = btn;
+                btn.classList.add('def-selected');
+            }
+
+            if (selectedWord && selectedDef) {
+                if (!userAnswers[key]) userAnswers[key] = {};
+                userAnswers[key][selectedWord.dataset.word] = selectedDef.dataset.def;
+
+                selectedWord.classList.add('paired');
+                selectedDef.classList.add('paired');
+                selectedWord.classList.remove('word-selected');
+                selectedDef.classList.remove('def-selected');
+                
+                selectedWord = null;
+                selectedDef = null;
+            }
+        };
+
+        const nextQuestion = () => {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                finishTest();
+            }
+        };
+        
+        const finishTest = () => {
+            endTime = Date.now();
+            score = 0;
+            questions.forEach((q, index) => {
+                const key = q.type === 'matching' ? index : (q.word || q.correctAnswer);
+                const userAnswer = userAnswers[key];
+                if (userAnswer === undefined) return;
+
+                if (q.type === 'multiple-choice' && userAnswer === q.correctAnswer) {
+                    score++;
+                } else if (q.type === 'fill-in-the-blank' && userAnswer.trim().toLowerCase() === q.correctAnswer.toLowerCase()) {
+                    score++;
+                } else if (q.type === 'matching') {
+                    let correctMatches = 0;
+                    Object.keys(userAnswer).forEach(word => {
+                        if (q.correctPairs[word] === userAnswer[word]) {
+                            correctMatches++;
+                        }
+                    });
+                    score += (correctMatches / q.words.length);
+                }
+            });
+            renderResults();
+            switchView('results');
+        };
+
+        const renderResults = () => {
+            const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+            const percentage = questions.length > 0 ? ((score / questions.length) * 100).toFixed(0) : 0;
+            
+            let content = `
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-800">Test Complete!</h2>
+                    <div class="bg-gray-100 p-6 rounded-lg shadow-inner mb-6">
+                        <p class="text-2xl text-gray-700">Your Score: <span class="font-bold text-indigo-600">${score.toFixed(1)} / ${questions.length}</span></p>
+                        <p class="text-4xl font-bold text-indigo-600 mt-2">${percentage}%</p>
+                        <p class="text-md text-gray-600 mt-4">Time Taken: ${timeTaken} seconds</p>
+                    </div>
+                     <div class="text-left mt-8 max-h-96 overflow-y-auto pr-2">
+                        <h3 class="text-2xl font-semibold mb-4 border-b pb-2">Review Your Answers</h3>
+            `;
+
+            questions.forEach((q, index) => {
+                const key = q.type === 'matching' ? index : (q.word || q.correctAnswer);
+                const userAnswer = userAnswers[key];
+                
+                if (q.type === 'matching') {
+                    content += `<div class="mb-4 p-4 rounded-lg bg-white shadow"><p class="font-semibold">${index + 1}. ${q.question}</p><ul class="list-disc list-inside mt-2">`;
+                    q.words.forEach(word => {
+                        const userDef = userAnswer ? userAnswer[word] : "No answer";
+                        const correctDef = q.correctPairs[word];
+                        const isMatchCorrect = userDef === correctDef;
+                        content += `<li class="${isMatchCorrect ? 'text-green-700' : 'text-red-700'}"><strong>${word}:</strong> Your match "${userDef || 'none'}" was ${isMatchCorrect ? 'correct' : `incorrect. Correct was "${correctDef}"`}.</li>`;
+                    });
+                    content += `</ul></div>`;
+                } else {
+                    let isCorrect = false;
+                    let correctAnswerText = '';
+                    if (q.type === 'multiple-choice') {
+                        isCorrect = userAnswer === q.correctAnswer;
+                        correctAnswerText = q.correctAnswer;
+                    } else if (q.type === 'fill-in-the-blank') {
+                        isCorrect = userAnswer && userAnswer.trim().toLowerCase() === q.correctAnswer.toLowerCase();
+                        correctAnswerText = q.correctAnswer;
+                    }
+                    content += `<div class="mb-4 p-4 rounded-lg shadow ${isCorrect ? 'bg-green-100 border-l-4 border-green-500' : 'bg-red-100 border-l-4 border-red-500'}">
+                                    <p class="font-semibold">${index + 1}. ${q.question}</p>
+                                    <p class="mt-2">Your answer: <span class="font-medium">${userAnswer || 'No answer'}</span></p>
+                                    ${!isCorrect ? `<p class="mt-1">Correct answer: <span class="font-medium">${correctAnswerText}</span></p>` : ''}
+                                </div>`;
+                }
+            });
+
+            content += `</div><button id="try-again-btn" class="mt-8 bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">Try Again</button></div>`;
+            resultsView.innerHTML = content;
+            document.getElementById('try-again-btn').addEventListener('click', () => {
+                switchView('intro');
+            });
+        };
+
+        // --- Initial Event Listener ---
+        startBtn.addEventListener('click', startTest);
+    </script>
+</body>
+</html>
